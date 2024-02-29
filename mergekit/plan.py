@@ -149,7 +149,23 @@ class MergePlanner:
             is_base = model == cfg_reader.config.base_model
             tensor_params[model] = {}
             cfg_m = cfg_reader.for_tensor(weight_in.name)
+
+            # === DEBUG ==== 
+            # if not cfg_m.slice_out:
+            #     print('Ops')
+            # if cfg_m.slice_out.parameters:
+            #     print('Oooops')
+            # Nothing print shows mergekit/config.py/parameter() only go to the first branch.
+            # ==============
+            
             for p in tensor_merge_method.tensor_parameters():
+
+                # === DEBUG ====
+                # print(p.name) # 'density' or 'weight'
+                # print(weight_in.name) # 'model.embed_tokens.weight'
+                # Update the parameter of each merge ops to control spasity and weight
+                # ==============                
+                
                 tensor_params[model][p.name] = cfg_m.parameter(
                     p.name,
                     model=model,
