@@ -178,11 +178,11 @@ class ConfigReader(BaseModel):
                     if s.model == model and s.parameters and any(name in p for p in s.parameters):
                         if 'embed_tokens' in self.tensor_name:
                             p_name = 'pre_' + name
-                        elif 'lm_head' in self.tensor_name:
+                        elif 'lm_head' in self.tensor_name or 'model.norm' in self.tensor_name:
                             p_name = 'post_' + name
                         else:
                             p_name = 'layers_' + name
-                        
+
                         value = evaluate_setting(
                             self.tensor_name, s.parameters[p_name], self.t
                         )
