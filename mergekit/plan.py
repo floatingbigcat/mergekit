@@ -150,14 +150,6 @@ class MergePlanner:
             tensor_params[model] = {}
             cfg_m = cfg_reader.for_tensor(weight_in.name)
 
-            # === DEBUG ==== 
-            # if not cfg_m.slice_out:
-            #     print('Ops')
-            # if cfg_m.slice_out.parameters:
-            #     print('Oooops')
-            # Nothing print shows mergekit/config.py/parameter() only go to the first branch.
-            # ==============
-            
             for p in tensor_merge_method.tensor_parameters():
 
                 # === DEBUG ====
