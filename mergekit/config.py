@@ -177,12 +177,14 @@ class ConfigReader(BaseModel):
                     # We extend to parse paramters for different tensor_name
                     if s.model == model and s.parameters and any(name in p for p in s.parameters):
                         if 'embed_tokens' in self.tensor_name:
-                            p_name = 'pre_' + name
+                            p_name = 'pre' + '_' + name
                         elif 'lm_head' in self.tensor_name or 'model.norm' in self.tensor_name:
-                            p_name = 'post_' + name
+                            p_name = 'post' + '_' + name
                         else:
-                            p_name = 'layers_' + name
-
+                            prefix = '_'.join(self.tensor_name.split('.')[1:3]) # eg: layers_0
+                            p_name = prefix + '_' + name
+                            p_name = p_name if p_name in s.parameters else 'layers' + '_' + name
+                        
                         value = evaluate_setting(
                             self.tensor_name, s.parameters[p_name], self.t
                         )
