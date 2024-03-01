@@ -10,9 +10,6 @@ def build_config() -> dict:
                     "post_density": 0.6,
                     "post_weight": 0.6,
                 }
-    for i in range(32):  # 32 iterations for layers 0 through 31
-        ja_parameters[f"layers_{i}_density"] = random.uniform(0, 1)
-        ja_parameters[f"layers_{i}_weight"] = random.uniform(0, 1)
     
     math1_parameters = {
                     "pre_density": 0.6,
@@ -20,9 +17,6 @@ def build_config() -> dict:
                     "post_density": 0.6,
                     "post_weight": 0.6,
                 }
-    for i in range(32):  # 32 iterations for layers 0 through 31
-        math1_parameters[f"layers_{i}_density"] = random.uniform(0, 1)
-        math1_parameters[f"layers_{i}_weight"] = random.uniform(0, 1)
     
     math2_parameters = {
                     "pre_density": 0.6,
@@ -31,10 +25,14 @@ def build_config() -> dict:
                     "post_weight": 0.6,
                 }
     for i in range(32):  # 32 iterations for layers 0 through 31
+        ja_parameters[f"layers_{i}_density"] = random.uniform(0, 1)
+        ja_parameters[f"layers_{i}_weight"] = random.uniform(0, 1)
+        math1_parameters[f"layers_{i}_density"] = random.uniform(0, 1)
+        math1_parameters[f"layers_{i}_weight"] = random.uniform(0, 1)
         math2_parameters[f"layers_{i}_density"] = random.uniform(0, 1)
         math2_parameters[f"layers_{i}_weight"] = random.uniform(0, 1)
     
-    config = {
+    return {
         "models": [
             {
                 "model": "mistralai/Mistral-7B-v0.1",
@@ -57,7 +55,7 @@ def build_config() -> dict:
         "parameters": {"int8_mask": True},
         "dtype": "bfloat16",
     }
-    return config
+
 
 work_dir = "/home/qisun/work-optuna/math-ja-dare-ties/trial_debug/"
 model_dir = "/home/qisun/work-optuna/math-ja-dare-ties"
