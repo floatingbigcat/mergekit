@@ -171,6 +171,24 @@ class ConfigReader(BaseModel):
                         )
                         if value is not None:
                             return value
+                    
+                    # === Layer Wise === 
+                    # Above code is from original that parse 'weight' and 'density' from s.parameters
+                    # We extend to parse paramters for different tensor_name
+                    if s.model == model and s.parameters and any(name in p for p in s.parameters):
+                        if 'embed_tokens' in self.tensor_name:
+                            p_name = 'pre_' + name
+                        elif 'lm_head' in self.tensor_name:
+                            p_name = 'post_' + name
+                        else:
+                            p_name = 'layers_' + name
+                        
+                        value = evaluate_setting(
+                            self.tensor_name, s.parameters[p_name], self.t
+                        )
+                        if value is not None:
+                            return value
+                    # ==================
 
             if self.slice_out.parameters and name in self.slice_out.parameters:
                 value = evaluate_setting(
