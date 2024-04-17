@@ -146,7 +146,7 @@ class Executor:
         self.schedule = self._make_schedule(tasks)
         self.targets = tasks
 
-    def run(self) -> Iterator[Tuple[Task, Any]]:
+    def run(self, weight_dict) -> Iterator[Tuple[Task, Any]]:
         """
         Execute the computed schedule and yield the target values.
 
@@ -188,17 +188,15 @@ class Executor:
                 arguments[name] = value
                 del value
 
-            res = task.execute(**arguments)
+            try:
+                weight_name = task.tensor
+                model_name = task.model.model.path
+                res = weight_dict[model_name][weight_name]
+            except:
+                res = task.execute(**arguments)
             del arguments
 
-            if isinstance(res, torch.Tensor) and res.device != self.storage_device:
-                res = res.to(self.storage_device)
-
             values[task] = res
-            del res
-
-            if task in self.targets:
-                yield (task, values[task])
 
             # evict unreferenced values
             expired = []
@@ -208,6 +206,11 @@ class Executor:
 
             for key in expired:
                 del values[key]
+
+            if idx == len(self.schedule) - 1:
+                return res
+            else:
+                del res
 
     def execute(self) -> None:
         """
