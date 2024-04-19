@@ -19,6 +19,7 @@ from typing import Optional
 
 import tqdm
 import transformers
+import torch
 
 from mergekit.architecture import ArchitectureInfo, get_architecture_info
 from mergekit.card import generate_card
@@ -32,9 +33,8 @@ from mergekit.tokenizer import TokenizerInfo
 
 def run_merge(
     merge_config: MergeConfiguration,
-    out_path: str,
     options: MergeOptions,
-    config_source: Optional[str] = None,
+    weight_dict: dict[str, dict[str, torch.Tensor]],
 ):
     if options.random_seed is not None:
         transformers.trainer_utils.set_seed(options.random_seed)
@@ -53,13 +53,6 @@ def run_merge(
             )
     arch_info = model_arch_info[0]
 
-    # initialize loader cache and set options
-    loader_cache = LoaderCache()
-    loader_cache.lazy_unpickle = options.lazy_unpickle
-    loader_cache.lora_cache_dir = options.lora_merge_cache
-    loader_cache.hf_cache_dir = options.transformers_cache
-    loader_cache.trust_remote_code = options.trust_remote_code
-
     # create config for output model
     cfg_out = _model_out_config(
         merge_config, arch_info, trust_remote_code=options.trust_remote_code
@@ -69,59 +62,18 @@ def run_merge(
     targets = MergePlanner(
         merge_config,
         arch_info,
-        out_path=out_path,
         options=options,
         out_model_config=cfg_out,
     ).plan()
 
-    # warm up loader cache
-    for model in tqdm.tqdm(
-        merge_config.referenced_models(), desc="Warmup loader cache"
-    ):
-        loader_cache.get(model)
-
     exec = Executor(
         tasks=targets,
         math_device="cuda" if options.cuda else "cpu",
-        storage_device="cuda" if options.low_cpu_memory else "cpu",
+        storage_device="cuda" if options.low_cpu_memory else "cpu"
     )
 
-    tokenizer = None
-    for _task, value in exec.run():
-        if isinstance(value, TokenizerInfo):
-            tokenizer = value.tokenizer
-
-    if tokenizer:
-        _update_config_vocab(cfg_out, tokenizer)
-
-    logging.info("Saving config")
-    cfg_out.save_pretrained(out_path)
-
-    if options.write_model_card:
-        if not config_source:
-            config_source = merge_config.to_yaml()
-
-        card_md = generate_card(
-            config=merge_config,
-            config_yaml=config_source,
-            name=os.path.basename(out_path),
-        )
-        with open(os.path.join(out_path, "README.md"), "w", encoding="utf-8") as fp:
-            fp.write(card_md)
-
-        with open(
-            os.path.join(out_path, "mergekit_config.yml"), "w", encoding="utf-8"
-        ) as fp:
-            fp.write(config_source)
-
-    if tokenizer is None and options.copy_tokenizer:
-        tokenizer = _get_donor_tokenizer(
-            merge_config, trust_remote_code=options.trust_remote_code
-        )
-
-    if tokenizer:
-        logging.info("Saving tokenizer")
-        tokenizer.save_pretrained(out_path, safe_serialization=True)
+    update_weight = exec.run(weight_dict)
+    return update_weight
 
 
 def _get_donor_tokenizer(

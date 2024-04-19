@@ -54,7 +54,6 @@ class MergePlanner:
         self,
         config: MergeConfiguration,
         arch_info: ArchitectureInfo,
-        out_path: str,
         options: MergeOptions,
         out_model_config: Any,
     ):
@@ -65,7 +64,6 @@ class MergePlanner:
         self.out_model_config = out_model_config
         self._method = merge_methods.get(config.merge_method)
         self._writer_task = TensorWriterTask(
-            out_path=out_path,
             max_shard_size=options.out_shard_size,
             safe_serialization=options.safe_serialization,
         )
